@@ -59,7 +59,10 @@ final class ProjectVMImpl: ProjectVM {
 	
 	func deleteTask(taskId: String) {
 		tasksService.deleteTask(taskId: taskId)
-		updateData()
+			.sink { [weak self] in
+				self?.updateData()
+			}
+			.store(in: &subscriptions)
 	}
 	
 	func setTaskDescription(taskId: String, description: String?) {

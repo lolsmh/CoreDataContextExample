@@ -13,7 +13,7 @@ protocol ProjectsService {
 	func fetchProjects() -> [ProjectCoreDataEntity]
 	func fetchProject(projectId: String) -> ProjectCoreDataEntity?
 	func createNewProject(name: String) -> AnyPublisher<Void, Never>
-	func deleteProject(projectId: String)
+	func deleteProject(projectId: String) -> AnyPublisher<Void, Never>
 }
 
 final class ProjectsServiceImpl: ProjectsService {
@@ -38,10 +38,12 @@ final class ProjectsServiceImpl: ProjectsService {
 		projectsStorage.entity(projectId)
 	}
 	
-	func deleteProject(projectId: String) {
-		guard let project = projectsStorage.entity(projectId) else { return }
+	func deleteProject(projectId: String) -> AnyPublisher<Void, Never> {
 		
-		projectsStorage.delete(entity: project)
-		projectsStorage.saveOrRollback()
+		projectsStorage.enqueueBackgroundWritingTaskPublisher { [weak self] writingContext in
+			guard let self, let project = self.projectsStorage.entity(projectId, in: writingContext) else { return }
+			
+			self.projectsStorage.delete(entity: project, in: writingContext)
+		}
 	}
 }

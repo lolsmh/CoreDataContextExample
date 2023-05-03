@@ -14,7 +14,7 @@ protocol TasksService {
 	func createNewTask(projectId: String, name: String) -> AnyPublisher<Void, Never>
 	func changeTaskName(taskId: String, name: String) -> AnyPublisher<Void, Never>
 	func changeTaskDescription(taskId: String, description: String?) -> AnyPublisher<Void, Never>
-	func deleteTask(taskId: String)
+	func deleteTask(taskId: String) -> AnyPublisher<Void, Never>
 }
 
 final class TasksServiceImpl: TasksService {
@@ -65,10 +65,12 @@ final class TasksServiceImpl: TasksService {
 		return tasksStorage.entities(.filtered(predicate: projectPredicate))
 	}
 	
-	func deleteTask(taskId: String) {
-		guard let task = tasksStorage.entity(taskId) else { return }
+	func deleteTask(taskId: String) -> AnyPublisher<Void, Never> {
 		
-		tasksStorage.delete(entity: task)
-		tasksStorage.saveOrRollback()
+		tasksStorage.enqueueBackgroundWritingTaskPublisher { [weak self] writingContext in
+			guard let self, let task = self.tasksStorage.entity(taskId, in: writingContext) else { return }
+			
+			self.tasksStorage.delete(entity: task, in: writingContext)
+		}
 	}
 }

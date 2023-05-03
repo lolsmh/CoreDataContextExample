@@ -50,7 +50,10 @@ final class ProjectListVMImpl: ProjectListVM {
 	
 	func deleteProject(projectId: String) {
 		projectsService.deleteProject(projectId: projectId)
-		updateData()
+			.sink { [weak self] in
+				self?.updateData()
+			}
+			.store(in: &subscriptions)
 	}
 	
 	private func updateData() {

@@ -22,7 +22,7 @@ extension NSManagedObjectContext {
 	}
 	
 	func performChanges(block: @escaping () -> Void) {
-		perform {
+		performAndWait {
 			block()
 		}
 	}
